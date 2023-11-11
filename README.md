@@ -7,4 +7,7 @@ challenges for extracting specific variables and subsetting to the region and pe
 benchmarking various chunking/subsetting operations, and identifying the best format to support these operations on a variety of retrospective datasets. The transformed (cloud-optimized) data would 
 then be stored in OSN (Open Storage Network) for public access via popular Python packages such as XArray or Dask.
 
+### Semester 1 milestone
+Create a preliminary data model that transforms AORC forcing data into a cloud-optimized format i.e. faster than storing the raw data offsite. Create documentation for this preliminary model that outlines how we transformed the data, and how to store and retrieve the data from an offsite database.
+
 Team lead: Michael Adelemoni, madelemo@purdue.edu
