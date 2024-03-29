@@ -4,23 +4,27 @@ import time
 import numpy as np
 import xarray as xr
 from dask.distributed import Client, LocalCluster
+from dask_jobqueue import SLURMCluster
 from testcases import testcases
 
 # Change to your username if running on anvil
 USERNAME = "x-michaelade"
 NUM_REPETITIONS = 5
-NUM_WORKERS = 64
-MEMORY = "512GB"
+NUM_WORKERS = 128
+MEMORY = "936 GB"
 
 # dask client
-client = None
-
-# TODO
-# Measure time to create and save chunks
-# Test across the time dimension 
+client = None 
 
 def initialize() ->None:
-  cluster = LocalCluster(n_workers=NUM_WORKERS, memory_limit=1/(NUM_WORKERS + 1))
+  cluster = SLURMCluster(
+    queue='highmem',
+    cores = 128,
+    n_workers=NUM_WORKERS, 
+    memory=MEMORY)
+  
+  cluster.scale(jobs = 4)
+
   client = Client(cluster)
 
 def shutdown() ->None:
@@ -49,14 +53,37 @@ def GetTestTime(datatset, testcases) -> int:
 def RunTestCases(pictureName, testcases, chunkSchemes) -> None:
   print("Running benchmark test cases")
   times = []
+  openTimes = []
 
   for scheme in chunkSchemes:
     fullpath = os.path.join(f"/anvil/scratch/{USERNAME}/", f"{scheme['name']}.zarr")
     print(f"\tTesting scheme: {scheme['name']}")
+
+    startTime = time.time() # measure the time it takes to open the file
     ds = xr.open_zarr(fullpath)
+    openTimes.append(time.time() - startTime)
+
     times.append(GetTestTime(ds, testcases))
 
+
   times = np.array(times)
+  openTimes = np.array(openTimes)
+
+  plt.figure(figsize=(12, 6))
+
+  # Create a line plot
+  plt.plot([scheme['name'] for scheme in chunkSchemes], openTimes)
+
+  # Add labels and title
+  plt.xlabel('Chunk Size')
+  plt.ylabel(f'Time to open file in seconds')
+  plt.title(f'Graph of opening time for chunk scheme')
+
+  # Save the chart to a file (e.g., as a PNG image)
+  plt.savefig(f'time_to_open.png')
+
+  # avoid overlap
+  plt.close()
 
   for idx, test in enumerate(testcases):
     plt.figure(figsize=(12, 6))
@@ -66,7 +93,7 @@ def RunTestCases(pictureName, testcases, chunkSchemes) -> None:
 
     # Add labels and title
     plt.xlabel('Chunk Size')
-    plt.ylabel(f'Time for test case')
+    plt.ylabel(f'Time for test case in seconds')
     plt.title(f'{testcases[idx]['name']}')
 
     # Save the chart to a file (e.g., as a PNG image)
@@ -77,32 +104,58 @@ def RunTestCases(pictureName, testcases, chunkSchemes) -> None:
 
 def Rechunk(chunkSchemes) -> None:
   print("Attempting to re-chunk dataset")
+  times = []
 
   rrt = None
   for scheme in chunkSchemes:
+    startTime = time.time() # calculate the time it takes to save
+
     if not os.path.exists(f"/anvil/scratch/{USERNAME}/{scheme['name']}.zarr"):
 
       if rrt is None:
         print("Missing scheme found! Loading entire dataset...")
-        ds = xr.open_mfdataset("/anvil/projects/x-cis220065/x-cybergis/compute/AORC_Forcing/2016/*.LDASIN_DOMAIN1", engine = "netcdf4", combine= "nested", concat_dim="Time", parallel = "True")
+        ds = xr.open_mfdataset("/anvil/datasets/ncar/AORC_Forcing/2016/*.LDASIN_DOMAIN1", engine = "netcdf4", combine= "nested", concat_dim="Time", parallel = True)
         rrt = ds["RAINRATE"]
 
       print(f"Re-chunking using scheme {scheme['name']}")
 
       rrt = rrt.chunk(scheme['scheme'])
       rrt.to_zarr(f"/anvil/scratch/{USERNAME}/{scheme['name']}.zarr", mode="w")
-  
+
+    times.append(time.time() - startTime)
+
+  if rrt is not None:
+    OutputTimeToChunkGraph(times)
+
+def OutputTimeToChunkGraph(data):
+  plt.figure(figsize=(12, 6))
+
+  # Create a line plot
+  plt.plot([scheme['name'] for scheme in chunkSchemes], data)
+
+  # Add labels and title
+  plt.xlabel('Chunk Size')
+  plt.ylabel(f'Time to rechunk and save in seconds')
+  plt.title(f'Graph of rechunking for chunk size')
+
+  # Save the chart to a file (e.g., as a PNG image)
+  plt.savefig(f'time_to_rechunk.png')
+
+  # avoid overlap
+  plt.close()
+
 if __name__ == "__main__" :
   #Start the client
   initialize()
 
   # Test chunk schemes across time
   chunkSchemes = [
-    {'name': "10x100x100", 'scheme': {"Time": 10, "south_north": 100, "west_east": 100}},
-    {'name': "50x300x300", 'scheme': {"Time": 50, "south_north": 300, "west_east": 300}},
-    {'name': "100x600x600", 'scheme': {"Time": 100, "south_north": 600, "west_east": 600}},
-    {'name': "150x900x900", 'scheme': {"Time": 150, "south_north": 900, "west_east": 900}},
-    {'name': "200x1200x1200", 'scheme': {"Time": 200, "south_north": 1200, "west_east": 1200}},
+    {'name': "Day-Med", 'scheme': {"Time": 24, "south_north": 0.8, "west_east": 0.8}},
+    {'name': "Week-Med", 'scheme': {"Time": 24*7, "south_north": 0.8, "west_east": 0.8}},
+    {'name': "Month-Med", 'scheme': {"Time": 24*7*4, "south_north": 0.8, "west_east": 0.8}},
+    {'name': "Month-Large", 'scheme': {"Time": 24*7*4, "south_north": 6, "west_east": 6}},
+    {'name': "6-Months-Large", 'scheme': {"Time": 24*7*24, "south_north": 6, "west_east": 6}},
+    {'name': "Year-Large", 'scheme': {"Time": 25*365, "south_north": 6, "west_east": 6}},
     ]
 
   Rechunk(chunkSchemes)
