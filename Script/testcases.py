@@ -7,68 +7,68 @@ def Bench_MaxRain(datatset: xr.Dataset):
 
 # Day ===============================================
 def Average_Small_Day(datatset: xr.Dataset):
-  area = datatset.sel(south_north=0, west_east=0, Time=slice(0, 24))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=0, y=0, time=slice(0, 24))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 def Average_Med_Day(datatset: xr.Dataset):
-  area = datatset.sel(south_north=slice(40.21, 40.71), west_east=slice(-111.7, -110.9), Time=slice(0, 24))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=slice(40.21, 40.71), y=slice(-111.7, -110.9), time=slice(0, 24))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 def Average_Large_Day(datatset: xr.Dataset):
-  area = datatset.sel(south_north=slice(36.048020187527, 41.8308079035245), west_east=slice(36.048020187527, 41.8308079035245), Time=slice(0, 24))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=slice(36.048020187527, 41.8308079035245), y=slice(36.048020187527, 41.8308079035245), time=slice(0, 24))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 # Week ===============================================
 def Average_Small_Week(datatset: xr.Dataset):
-  area = datatset.sel(south_north=0, west_east=0, Time=slice(0, 24*7))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=0, y=0, time=slice(0, 24*7))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 def Average_Med_Week(datatset: xr.Dataset):
-  area = datatset.sel(south_north=slice(40.21, 40.71), west_east=slice(-111.7, -110.9), Time=slice(0, 24*7))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=slice(40.21, 40.71), y=slice(-111.7, -110.9), time=slice(0, 24*7))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 def Average_Large_Week(datatset: xr.Dataset):
-  area = datatset.sel(south_north=slice(36.048020187527, 41.8308079035245), west_east=slice(36.048020187527, 41.8308079035245), Time=slice(0, 24*7))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=slice(36.048020187527, 41.8308079035245), y=slice(36.048020187527, 41.8308079035245), time=slice(0, 24*7))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 # Month ===============================================
 def Average_Small_Month(datatset: xr.Dataset):
-  area = datatset.sel(south_north=0, west_east=0, Time=slice(0, 24*7*4))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=0, y=0, time=slice(0, 24*7*4))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 def Average_Med_Month(datatset: xr.Dataset):
-  area = datatset.sel(south_north=slice(40.21, 40.71), west_east=slice(-111.7, -110.9), Time=slice(0, 24*7*4))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=slice(40.21, 40.71), y=slice(-111.7, -110.9), time=slice(0, 24*7*4))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 def Average_Large_Month(datatset: xr.Dataset):
-  area = datatset.sel(south_north=slice(36.048020187527, 41.8308079035245), west_east=slice(36.048020187527, 41.8308079035245), Time=slice(0, 24*7*4))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=slice(36.048020187527, 41.8308079035245), y=slice(36.048020187527, 41.8308079035245), time=slice(0, 24*7*4))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 # 6 Month ===============================================
 def Average_Small_6Month(datatset: xr.Dataset):
-  area = datatset.sel(south_north=0, west_east=0, Time=slice(0, 24*7*4*6))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=0, y=0, time=slice(0, 24*7*4*6))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 def Average_Med_6Month(datatset: xr.Dataset):
-  area = datatset.sel(south_north=slice(40.21, 40.71), west_east=slice(-111.7, -110.9), Time=slice(0, 24*7*4*6))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=slice(40.21, 40.71), y=slice(-111.7, -110.9), time=slice(0, 24*7*4*6))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 def Average_Large_6Month(datatset: xr.Dataset):
-  area = datatset.sel(south_north=slice(36.048020187527, 41.8308079035245), west_east=slice(36.048020187527, 41.8308079035245), Time=slice(0, 24*7*4*6))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=slice(36.048020187527, 41.8308079035245), y=slice(36.048020187527, 41.8308079035245), time=slice(0, 24*7*4*6))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 # Year ===============================================
 def Average_Small_Year(datatset: xr.Dataset):
-  area = datatset.sel(south_north=0, west_east=0, Time=slice(0, 24*7*4))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=0, y=0, time=slice(0, 24*7*4))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 def Average_Med_Year(datatset: xr.Dataset):
-  area = datatset.sel(south_north=slice(40.21, 40.71), west_east=slice(-111.7, -110.9), Time=slice(0, 24*7*4*6))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=slice(40.21, 40.71), y=slice(-111.7, -110.9), time=slice(0, 24*7*4*6))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 def Average_Large_Year(datatset: xr.Dataset):
-  area = datatset.sel(south_north=slice(36.048020187527, 41.8308079035245), west_east=slice(36.048020187527, 41.8308079035245), Time=slice(0, 24*7*4*6))
-  values = area['RAINRATE'].mean(dim="Time").compute().values
+  area = datatset.sel(x=slice(36.048020187527, 41.8308079035245), y=slice(36.048020187527, 41.8308079035245), time=slice(0, 24*7*4*6))
+  values = area['RAINRATE'].mean(dim="time").compute().values
 
 
 # Used for the test cases

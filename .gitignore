@@ -162,3 +162,5 @@ cython_debug/
 *.zarr
 *.out
 *.png
+
+IGNORE_*/

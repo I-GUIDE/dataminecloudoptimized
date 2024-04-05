@@ -2,10 +2,13 @@ import matplotlib.pyplot as plt
 import os
 import time
 import numpy as np
+import pandas as pd
 import xarray as xr
-from dask.distributed import Client, LocalCluster
+import dask.config
+from dask.distributed import Client
 from dask_jobqueue import SLURMCluster
 from testcases import testcases
+from tqdm import tqdm
 
 # Change to your username if running on anvil
 USERNAME = "x-michaelade"
@@ -17,13 +20,16 @@ MEMORY = "936 GB"
 client = None 
 
 def initialize() ->None:
+  dask.config.set({"array.slicing.split_large_chunks": False})
+
   cluster = SLURMCluster(
     queue='highmem',
     cores = 128,
     n_workers=NUM_WORKERS, 
-    memory=MEMORY)
+    memory=MEMORY,
+    walltime="04:00:00")
   
-  cluster.scale(jobs = 4)
+  cluster.scale(jobs = 1)
 
   client = Client(cluster)
 
@@ -55,7 +61,7 @@ def RunTestCases(pictureName, testcases, chunkSchemes) -> None:
   times = []
   openTimes = []
 
-  for scheme in chunkSchemes:
+  for idx, scheme in enumerate(tqdm(chunkSchemes)):
     fullpath = os.path.join(f"/anvil/scratch/{USERNAME}/", f"{scheme['name']}.zarr")
     print(f"\tTesting scheme: {scheme['name']}")
 
@@ -71,6 +77,14 @@ def RunTestCases(pictureName, testcases, chunkSchemes) -> None:
 
   plt.figure(figsize=(12, 6))
 
+  # Save as csv
+  openTimesDataFrame = pd.DataFrame(
+    data = openTimes, 
+    index = [scheme['name'] for scheme in chunkSchemes],
+    columns = "open_time");
+  
+  openTimesDataFrame.to_csv("Output/openTimes.csv")
+
   # Create a line plot
   plt.plot([scheme['name'] for scheme in chunkSchemes], openTimes)
 
@@ -80,10 +94,17 @@ def RunTestCases(pictureName, testcases, chunkSchemes) -> None:
   plt.title(f'Graph of opening time for chunk scheme')
 
   # Save the chart to a file (e.g., as a PNG image)
-  plt.savefig(f'time_to_open.png')
+  plt.savefig(f'Output/Images/time_to_open.png')
 
   # avoid overlap
   plt.close()
+
+  # Save as csv
+  openTimesDataFrame = pd.DataFrame(
+    data = times, 
+    index = [scheme['name'] for scheme in chunkSchemes],
+    columns = testcases[:]['name']);
+  openTimesDataFrame.to_csv("Output/computeTimes.csv")
 
   for idx, test in enumerate(testcases):
     plt.figure(figsize=(12, 6))
@@ -97,7 +118,7 @@ def RunTestCases(pictureName, testcases, chunkSchemes) -> None:
     plt.title(f'{testcases[idx]['name']}')
 
     # Save the chart to a file (e.g., as a PNG image)
-    plt.savefig(f'{testcases[idx]['name']}_{pictureName}.png')
+    plt.savefig(f'Output/Images/{testcases[idx]['name']}_{pictureName}.png')
 
     # avoid overlap
     plt.close()
@@ -107,15 +128,25 @@ def Rechunk(chunkSchemes) -> None:
   times = []
 
   rrt = None
-  for scheme in chunkSchemes:
+  for idxx, scheme in enumerate(tqdm(chunkSchemes)):
     startTime = time.time() # calculate the time it takes to save
 
     if not os.path.exists(f"/anvil/scratch/{USERNAME}/{scheme['name']}.zarr"):
 
       if rrt is None:
-        print("Missing scheme found! Loading entire dataset...")
-        ds = xr.open_mfdataset("/anvil/datasets/ncar/AORC_Forcing/2016/*.LDASIN_DOMAIN1", engine = "netcdf4", combine= "nested", concat_dim="Time", parallel = True)
-        rrt = ds["RAINRATE"]
+        print(f"Missing scheme found ({scheme['name']})! Loading entire dataset...")
+
+        path = "/anvil/datasets/ncar/AORC_Forcing/2016/"
+        files = os.listdir(path)[:50]
+
+        dataset = xr.open_mfdataset(
+          [os.path.join(path, file) for file in files], 
+          parallel=True,
+          combine='nested',
+          concat_dim='time',
+          engine = "netcdf4")
+      
+        rrt = dataset["RAINRATE"]
 
       print(f"Re-chunking using scheme {scheme['name']}")
 
@@ -139,7 +170,7 @@ def OutputTimeToChunkGraph(data):
   plt.title(f'Graph of rechunking for chunk size')
 
   # Save the chart to a file (e.g., as a PNG image)
-  plt.savefig(f'time_to_rechunk.png')
+  plt.savefig(f'Output/Images/time_to_rechunk.png')
 
   # avoid overlap
   plt.close()
@@ -150,16 +181,19 @@ if __name__ == "__main__" :
 
   # Test chunk schemes across time
   chunkSchemes = [
-    {'name': "Day-Med", 'scheme': {"Time": 24, "south_north": 0.8, "west_east": 0.8}},
-    {'name': "Week-Med", 'scheme': {"Time": 24*7, "south_north": 0.8, "west_east": 0.8}},
-    {'name': "Month-Med", 'scheme': {"Time": 24*7*4, "south_north": 0.8, "west_east": 0.8}},
-    {'name': "Month-Large", 'scheme': {"Time": 24*7*4, "south_north": 6, "west_east": 6}},
-    {'name': "6-Months-Large", 'scheme': {"Time": 24*7*24, "south_north": 6, "west_east": 6}},
-    {'name': "Year-Large", 'scheme': {"Time": 25*365, "south_north": 6, "west_east": 6}},
+    {'name': "Day-Med", 'scheme': {"time": 24, "x": 1, "y": 1}},
+    {'name': "Week-Med", 'scheme': {"time": 24*7, "x": 1, "y": 1}},
+    {'name': "Month-Med", 'scheme': {"time": 24*7*4, "x": 1, "y": 1}},
+    {'name': "Month-Large", 'scheme': {"time": 24*7*4, "x": 6, "y": 6}},
+    {'name': "6-Months-Large", 'scheme': {"time": 24*7*24, "x": 6, "y": 6}},
+    {'name': "Year-Large", 'scheme': {"time": 24*365, "x": 6, "y": 6}},
     ]
 
-  Rechunk(chunkSchemes)
-  RunTestCases("chunk_test", testcases, chunkSchemes)
+  try :
+    Rechunk(chunkSchemes)
+    RunTestCases("chunk_test", testcases, chunkSchemes)
 
-  shutdown()
+  # We make sure to always shutdown safely  
+  finally:
+    shutdown()
 
