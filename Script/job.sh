@@ -6,7 +6,7 @@ if [ $# -eq 0 ]
   exit
 fi
 
-module load anaconda
+module load anaconda/2021.05-py38
 conda activate $1
 
 echo "Started at: $(date)"
